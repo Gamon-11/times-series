@@ -1,0 +1,23 @@
+
+dattttta
+
+
+series_futures <- dattttta %>%
+  group_by(Futures) %>%
+  group_modify(~ {
+    # Créer l'objet zoo
+    zoo_object <- zoo(.x$Lowest_Cotation, order.by = .x$Date)
+    
+    # Retourner les données sous forme de data frame
+    data.frame(Date = index(zoo_object), Value = coredata(zoo_object))
+  })
+
+# Visualiser les séries par "Futures"
+head(series_futures)
+
+series_futures <- series_futures %>% filter(Futures != "cotation du cacao")
+levels(series_futures$Futures)
+# Tracer avec ggplot2
+ggplot(series_futures, aes(x = Date, y = Value, color = Futures)) +
+  geom_line() +
+  labs(title = "Série Chronologique par Futures", x = "Date", y = "Value")

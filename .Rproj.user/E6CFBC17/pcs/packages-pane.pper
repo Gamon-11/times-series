@@ -1,0 +1,7 @@
+{
+    "installOptions": {
+        "installFromRepository": true,
+        "libraryPath": "/Users/maximegamondele/Documents/R-Library",
+        "installDependencies": true
+    }
+}

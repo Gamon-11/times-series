@@ -1,0 +1,181 @@
+# Formation : DUT STID (Lisieux) - STID1
+# Module : Ajustement de courbes et séries chronologiques (M2102)
+# Auteur : Prénom - Nom
+# Création : date du jour
+# Modification : date du jour
+# Objectif : analyse exploratoire de la chronique
+
+# Chargement de l’objet Airport
+load("../Data/Hotel.RData")
+
+# Visualisation de la chronique
+library(ggplot2)
+ggplot(data = Hotel) +
+  geom_line(aes(x = index(Hotel), y = coredata(Hotel)),
+            color = "blue", size = 1) +
+  scale_x_date(position = "bottom",
+               date_breaks = "1 year",
+               date_minor_breaks = "3 months",
+               date_labels = "%b %Y") +
+  labs(title = "Nuitées dans l’hôtellerie en Normandie",
+       x = "Janv. 2010 à Déc. 2018",
+       y = "Nombre de nuitées en milliers")
+
+# Caractéristiques globales
+cat("Caractéristiques globales :\n\n")
+summary(coredata(Hotel))
+
+# Moyennes par année
+aggregate(coredata(Hotel) ~ format(index(Hotel), "%Y"), FUN = mean) -> MeanByYear
+names(MeanByYear) = c("Année", "Moyenne")
+ggplot(data = MeanByYear, aes(x = Année, y = Moyenne)) +
+  geom_point(color = "blue") +
+  geom_line(color = "blue", group = 1) +
+  geom_text(aes(label = round(Moyenne)), vjust = -0.5) +
+  labs(title = "Évolution par année du nombre de nuitées",
+       x = NULL,
+       y = "Nombre de nuitées en milliers")
+
+# Visualisation de la tendance
+ggplot(data = Hotel, aes(x = index(Hotel), y = coredata(Hotel))) +
+  geom_line(color = "blue", size = 1) +
+  geom_smooth(method = "loess", color = "red", span = 0.7, method.args = list(degree = 1)) +
+  scale_x_date(position = "bottom",
+               date_breaks = "1 year",
+               date_minor_breaks = "3 months",
+               date_labels = "%b %Y") +
+  labs(title = "Visualisation de la tendance",
+       x = NULL,
+       y = "Nombre de nuitées en milliers")
+
+# Détermination de la tendance lissée
+time = as.numeric(index(Hotel))
+values = coredata(Hotel)
+smooth = loess(values ~ time, span = 0.7, degree = 1)
+smooth = zoo(predict(smooth), order.by = index(Hotel))
+
+# Détermination du point de rupture
+time = index(Hotel)
+t1 = as.Date("2016-01-01")
+Ind1 = time > t1
+time1 = (time - t1) * Ind1
+
+# Ajustement du modèle de régression
+values = coredata(smooth)
+model1 = lm(values ~ time + time1)
+summary(model1)
+
+# Série des variations saisonnières
+trend = zoo(predict(model1), order.by = index(Hotel))
+varseason = Hotel - trend
+ggplot(data = varseason, aes(x = index(varseason), y = coredata(varseason))) +
+  geom_hline(yintercept = 0) +
+  geom_line(color = "red", size = 1) +
+  labs(title = "Visualisation des variations saisonnières",
+       x = NULL,
+       y = "Nombre de nuitées en milliers")
+
+# Variations saisonnières par mois
+Mean = aggregate(coredata(varseason) ~ format(index(varseason), "%m"), FUN = mean)
+names(Mean) = c("Mois", "Varseason")
+mois = format(seq(as.Date("2018-01-01"),
+                  as.Date("2018-12-01"),
+                  by = "months"),
+              "%b")
+ggplot(data = varseason, aes(x = format(index(varseason), "%m"),
+                             y = coredata(varseason))) +
+  geom_hline(yintercept = 0, lty = 2) +
+  geom_boxplot(alpha = 0.7,
+               fill = "orange",
+               outlier.colour = "red",
+               outlier.shape = 20, outlier.size = 2) +
+  scale_x_discrete(labels = mois) +
+  geom_point(data = Mean, aes(x = Mois, y = Varseason),
+             color = "green4") +
+  geom_line(data = Mean, aes(x = Mois, y = Varseason, group = 1),
+            color = "green4") +
+  labs(title = "Variations des nuitées selon le mois",
+       x = NULL,
+       y = "Nombre de nuitées en milliers")
+
+# Coefficients saisonniers définitifs
+month = format(index(varseason), "%m")
+values = coredata(varseason)
+model2 = lm(values ~ -1 + month)
+summary(model2)
+
+# Coefficients saisonniers définitifs
+defseason = coef(model2) - mean(coef(model2))
+# Vérification de la conservation des aires
+sum(defseason)
+
+# Série ajustée
+season = zoo(rep(defseason, 9), order.by = index(varseason))
+adjusted = trend + season
+ggplot(data = Hotel, aes(x = index(Hotel), y = coredata(Hotel), color = "Série brute")) +
+  geom_line() +
+  geom_line(data = adjusted, aes(x = index(adjusted), y = coredata(adjusted), color = "Série ajustée")) +
+  scale_colour_manual(name = NULL,
+                      breaks = c("Série brute", "Série ajustée"),
+                      values = c("Série brute" = "blue", "Série ajustée" = "red")) +
+  labs(title = "Visualisation de l’ajustement",
+       x = NULL,
+       y = "Nombre de nuitées en milliers") +
+  theme(legend.position = "bottom")
+
+
+
+# Série des résidus
+residual = Hotel - adjusted
+
+# Série des résidus normalisés
+normresidual = residual / sd(residual)
+
+# Visualisation de la série des résidus normalisés
+ggplot(data = normresidual, aes(x = index(normresidual), y = coredata(normresidual))) +
+  geom_hline(yintercept = 0) +
+  geom_line(color = "blue", size = 1) +
+  geom_hline(yintercept = c(-2, 2), lty = 2) +
+  labs(title = "Série des résidus normalisés",
+       x = NULL,
+       y = "Résidus normalisés")
+
+# QQ-Plot des résidus normalisés
+library(car)
+qqPlot(as.numeric(normresidual), pch = 20, col = "blue3",
+       xlab = "Quantiles théoriques",
+       ylab = "Quantiles empiriques",
+       main = "QQ-Plot des résidus normalisés")
+
+# Test de Shapiro-Wilk
+data = coredata(normresidual)
+shapiro.test(data)
+
+# Corrélogramme
+acf(data, lag.max = 48, type = "correlation", col = "red4", lwd = 2,
+    main = "Corrélogramme", xlab = "Horizon (Max = 4 ans)")
+
+# Préparation pour la prévision
+time = seq(as.Date("2019-01-01"), as.Date("2022-12-01"), by = "months")
+t1 = as.Date("2016-01-01")
+Ind1 = time > t1
+time1 = (time - t1) * Ind1
+df = data.frame(time = time, time1 = time1)
+
+# Prévision
+predict.trend = predict(model1, newdata = df)
+predict.season = rep(defseason, 4)
+predict = predict.trend + predict.season
+predict = zoo(predict, order.by = time)
+print(round(predict, 0))
+
+# Visualisation de la prévision
+ggplot(data = Hotel) +
+  geom_line(aes(x = index(Hotel), y = coredata(Hotel)), color = "blue", size = 1.2) +
+  scale_x_date(limits = c(as.Date("2010-01-01"), as.Date("2022-12-01")),
+               date_labels = "%b %Y") +
+  geom_line(data = predict, aes(x = index(predict), y = coredata(predict)),
+            color = "red3", size = 1.2) +
+  labs(title = "Visualisation de la prévision",
+       x = NULL,
+       y = "Nombre de nuitées en milliers")

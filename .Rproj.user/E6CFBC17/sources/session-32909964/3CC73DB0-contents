@@ -1,0 +1,334 @@
+load("AirportParis/Airport.RData")
+
+# Visualisation de la chronique
+plot(Airport,xlab="Janvier 1982 - Décembre 2016",
+     ylab="Nombre de passagers (en milliers)",
+     main="Fréquentation des passagers - Aéroporte de Paris - Vols internationaux", lwd=1,lty=1,col="blue",ylim=c(0,10000),xaxt="n")
+date = seq(as.Date("1982-01-01"),as.Date("2017-01-01"),by="5 years")
+axis(side=1,at=date,labels=format(date,"%b %Y"))
+abline(v=date,col="gray50",lty=2)
+
+
+# Visualisation de la chronique depuis janvier 2004
+Airport2004 = window(Airport,start=as.Date("2004-01-01")) 
+plot(Airport2004,xlab="Janvier 1982 - Décembre 2016",
+     ylab="Nombre de passagers (en milliers)",
+     main="Fréquentation des passagers - Aéroporte de Paris - Vols internationaux", 
+     lwd=1,
+     lty=1,
+     col="blue",
+     ylim=c(2000,10000),
+     xaxt="n") # retire les abscices par défaut de ce fait on les recree juste en dessous
+
+date = seq(as.Date("2004-01-01"),as.Date("2017-01-01"),by="2 years")
+axis(side=1,at=date,labels=format(date,"%b %Y"))
+abline(v=date,col="gray50",lty=3)
+
+
+# MODELISATION DANS LE CADRE ADDITIF
+
+# Caract ́eristiques globales
+cat("Caractéristiques sur les données depuis 2004 :\n\n"); summary(coredata(Airport2004))
+
+# Moyennes par ann ́ee
+MeanByYear = round(aggregate(Airport2004,by=format(index(Airport2004),"%Y"),FUN=mean),0)
+
+plot(MeanByYear,
+     xlab="Période : 2004 à 2016",
+     ylab="Nombre de passagers (en millier)",
+     main="Fréquentation des passagers - Aéroports de Paris - Vols internationaux",
+     lwd=1.5,lty=1,col="blue")
+abline(v=2008,col="purple",lty=3)
+text(2010,5000,labels="Crise économique\n mondiale en 2008")
+
+
+
+# Estimation non param ́etrique de la tendance
+time = as.numeric(index(Airport2004))
+values = coredata(Airport2004)
+smooth = loess(values~time,span=0.25,degree=1)
+smooth = zoo(smooth$fitted,order.by=index(Airport2004))
+
+plot(Airport2004,
+     lwd=1,
+     lty=1,
+     col="blue",
+     ylim=c(4000,8500),
+     xaxt="n",
+     main="Nombre de passager à l'international - Aéroport de Paris",
+     xlab="Janvier 2004 - Décembre 2016",
+     ylab="Nombre de passagers (en milliers)")
+
+date = seq(as.Date("2004-01-01"),
+           as.Date("2017-01-01"),
+           by="2 years")
+
+axis(side=1,at=date,labels=format(date,"%b %Y"))
+
+abline(v=date,col="gray50",lty=3)
+lines(smooth,col="red3",lwd=2)
+legend("topleft",
+       legend=c("Série brut","Série lissée (span=0.25)"),
+       col=c("blue","red3"),
+       lty=1,
+       bty="n")
+
+# Définition des points de ruptures
+t1 = as.Date("2008-01-01")
+t2 = as.Date("2009-11-01")
+time = index(Airport2004)
+Ind1 = time > t1; time1 = (time-t1)*Ind1 # Renvoie d'une liste de booléen pour savoir si la valeur fait partie ou non d'un sous ensemble de notre data
+Ind2 = time > t2; time2 = (time-t2)*Ind2
+
+
+# Modélisation de la courbe de lissage
+values = coredata(smooth)
+model1 = lm(values~time+time1+time2)
+summary(model1)
+trend = zoo(model1$fitted, order.by=index(Airport2004))
+
+##### Comparaison lissage et modèle de régression par morceaux #####
+# Plot de base : création d'un graphique vide (type="n")
+plot(
+  Airport2004, 
+  #type = "n",                          # Ne trace rien au départ
+  xlab = "Janvier 2004 - Décembre 2016", # Label de l'axe X
+  ylab = "Nombre de passagers (en milliers)", # Label de l'axe Y
+  main = "Fréquentation des passagers - Aéroports de Paris - Vols internationaux", # Titre
+  lwd = 1,                             # Épaisseur par défaut des lignes (utile pour `lines`)
+  lty = 1,                             # Type de ligne par défaut
+  col = "blue",                        # Couleur par défaut (utile si `type` n'est pas "n")
+  ylim = c(4000, 7000),                # Limites de l'axe Y
+  xaxt = "n"                           # Suppression de l'axe X par défaut
+)
+
+# Génération des dates pour l'axe X
+date <- seq(as.Date("2004-01-01"), as.Date("2017-01-01"), by = "2 years")
+
+# Personnalisation de l'axe X avec des étiquettes formatées
+axis(
+  side = 1,                            # Axe du bas
+  at = date,                           # Positions des ticks
+  labels = format(date, "%b %Y")       # Étiquettes des ticks (mois et année)
+)
+
+# Ajout de lignes verticales pour les dates
+abline(
+  v = date,                            # Positions des lignes verticales
+  col = "gray50",                      # Couleur des lignes
+  lty = 3                              # Type de ligne en pointillé
+)
+
+# Ajout de la courbe lissée
+lines(
+  smooth,                              # Données lissées
+  col = "green4",                      # Couleur de la courbe
+  lwd = 2                              # Épaisseur de la courbe
+)
+
+# Ajout de la courbe de tendance (modèle linéaire)
+lines(
+  trend,                               # Données du modèle de tendance
+  col = "red3",                        # Couleur de la courbe
+  lwd = 2                              # Épaisseur de la courbe
+)
+
+# Légende
+legend(
+  "topleft",                           # Position en haut à gauche
+  legend = c("Lissage", "Modèle linéaire par morceaux"), # Texte des légendes
+  col = c("green4", "red3"),           # Couleurs associées
+  lty = 1,                             # Type de lignes
+  bty = "n"                            # Pas de boîte autour de la légende
+)
+
+
+##### Estimation de la composante saisonnière #####
+season2004 <- Airport2004 - trend
+
+# Création du graphique
+plot(season2004,
+     lwd = 1,
+     lty = 1,
+     col = "blue",
+     xaxt = "n",  # Suppression de l'axe x automatique
+     main = "Visualisation des variations saisonnières",
+     xlab = "Janvier 2004 - Décembre 2016",
+     ylab = "Nombre de passagers (en milliers)")
+
+# Création des dates pour l'axe x (tous les 2 ans)
+date <- seq(as.Date("2004-01-01"), as.Date("2017-01-01"), by = "2 years")
+
+# Ajout de l'axe x personnalisé avec les dates formatées
+axis(side = 1, at = date, labels = format(date, "%b %Y"))
+
+# Ajout de lignes verticales grises aux dates spécifiées
+abline(v = date, col = "gray50", lty = 3)
+
+# Ajout de la ligne horizontale à 0 pour référence
+abline(h = 0, lty = 1)
+
+
+##### Visualisation des variations saisonnières #####
+# Calcul des statistiques mensuelles sur la composante saisonnière
+StatByMonth <- aggregate(season2004, by = list(format(index(Airport2004), "%m")), FUN = summary)
+
+# Affichage des statistiques mensuelles
+print(StatByMonth)
+
+# Installation et chargement du package lubridate pour manipuler les mois
+library(lubridate)
+
+# Extraction des mois sous forme de noms (Jan, Feb, etc.) pour l'année 2016
+month <- format(seq(as.Date("2016-01-01"), as.Date("2016-12-01"), by = "month"), "%b")
+
+# Boxplot pour visualiser les variations saisonnières
+boxplot(coredata(season2004) ~ month(season2004), 
+        col = "orange", 
+        names = month, 
+        xlab = "Janv. 2004 - Déc. 2016", 
+        ylab = "Nombre de passagers", 
+        main = "Comportement saisonnier du nombre de passagers à l’international")
+
+# Ajouter les moyennes mensuelles par-dessus le boxplot (en vert)
+points(1:12, StatByMonth$Mean, type = "b", col = "red", lwd = 2)
+
+# Ajouter une ligne horizontale à 0 pour référence
+abline(h = 0, lty = 3)
+
+
+### Identification des valeurs atypiques
+
+# Identification des valeurs atypiques
+which(season2004 < -500 & month(season2004)==4)
+season2004[76]
+which(season2004 < 0 & month(season2004)==9)
+season2004[129]
+
+#Moyenne/somme des soefficients saisonneire = 0 
+
+
+# Traitement des valeurs atypiques On les retire 
+season2004[76] = StatByMonth[4,3]
+season2004[129] = StatByMonth[9,3]
+
+
+# Estimation des coefficients saisonniers
+datemonth = rep(month,13)
+datemonth = factor(datemonth,levels=month) 
+model2 = lm(coredata(season2004)~-1+datemonth) 
+summary(model2)
+
+# Coefficients saisonniers définitif
+coefdef = model2$coef - mean(model2$coef)
+
+# Visualisation de l’ajustement saisonnier
+season = zoo(rep(coefdef,13),order.by=index(Airport2004))
+plot(season2004,lwd=1,lty=1,col="blue",xaxt="n",
+     main="Fréquentation des passagers Aéroports de Paris - Vols internationaux",
+     xlab="Janvier 2004 - Décembre 2016",ylab="Nombre de passagers (en milliers)")
+date = seq(as.Date("2004-01-01"),as.Date("2017-01-01"),by="2 years") axis(side=1,at=date,labels=format(date,"%b %Y"))
+abline(v=date,col="gray50",lty=3)
+abline(h=0)
+lines(season,col="red3",lwd=2,lty=4)
+
+# Série ajustée
+adjusted = trend + season
+plot(Airport2004,lwd=1,lty=1,col="blue",ylim=c(3000,9000),xaxt="n",
+     main="Fréquentation des passagers Aéroports de Paris - Vols internationaux",
+     xlab="Janvier 2004 - D ́ecembre 2016",ylab="Nombre de passagers (en milliers)")
+date = seq(as.Date("2004-01-01"),as.Date("2017-01-01"),by="2 years")
+axis(side=1,at=date,labels=format(date,"%b %Y"))
+abline(v=date,col="gray50",lty=3)
+lines(adjusted,col="red3",lwd=2)
+legend("topleft",legend=c("Série brute","Série ajustée"),
+                                        col=c("blue","red3"),lty=1,bty="n")
+
+# Calcul des résidus et des résidus standardisés
+residual <- Airport2004 - adjusted
+residualstand <- residual / sd(residual)
+
+# Tracé de la série des résidus standardisés
+plot(residualstand,
+     lwd = 1.5, col = "blue", ylim = c(-6, +4), xaxt = "n",
+     main = "Série des résidus standardisés - Aéroports de Paris - Vols internationaux",
+     xlab = "Janvier 2004 - Décembre 2016", ylab = "Résidu standardisé")
+
+# Dates pour l'axe x (tous les 2 ans)
+date <- seq(as.Date("2004-01-01"), as.Date("2017-01-01"), by = "2 years")
+axis(side = 1, at = date, labels = format(date, "%b %Y"))
+
+# Lignes supplémentaires
+abline(v = date, col = "gray50", lty = 3)
+abline(h = 0, lty = 2)
+abline(h = c(-2, +2), col = "red3", lty = 3)
+
+#perturbations du trafic aérien en raison du nuage de cendres provenant du volcan islandais Eyjafjöll
+
+# Remplacement des dońeees atypiques
+index = which(as.numeric(residualstand) < -3)
+residual[index] = mean(residual[-index])
+residualstand = residual/sd(residual)
+
+
+# QQ-plot des résidus standardisés
+library(car)
+??qqPlot
+qqPlot(as.numeric(residualstand), 
+       pch = 20,
+       col = "red",
+       xlab = "Quantiles théoriques", 
+       ylab = "Quantiles empiriques", 
+       main = "QQ-plot des résidus standardisés")
+
+# Test de Shapiro-Wilk
+data = as.numeric(residualstand)
+shapiro.test(data)
+
+
+# Pr ́eparation pour la pr ́evision
+time = seq(as.Date("2017-01-01"),as.Date("2020-12-01"),by="months")
+t1 = as.Date("2008-01-01")
+t2 = as.Date("2009-11-01")
+Ind1 = time > t1; time1 = (time-t1)*Ind1
+Ind2 = time > t2; time2 = (time-t2)*Ind2 
+df=data.frame(time,time1,time2)
+
+# Pr ́eparation pour la pr ́evision
+predict.trend = predict(model1,newdata=df)
+predict.trend = zoo(predict.trend,order.by=time)
+predict = predict.trend + rep(coefdef,4)
+print(round(predict,0))
+
+# Tracé de la série de données avec la prévision
+plot(Airport2004, 
+     lwd = 1, col = "blue", 
+     ylim = c(3000, 10000),
+     main = "Fréquentation des passagers - Aéroports de Paris - Vols internationaux", 
+     xlab = "Janvier 2004 - Décembre 2016", 
+     ylab = "Nombre de passagers (en milliers)", 
+     xlim = c(as.Date("2004-01-01"), as.Date("2020-12-01")),
+     xaxt = "n")
+
+# Création des dates pour l'axe x
+date <- seq(as.Date("2004-01-01"), as.Date("2020-12-01"), by = "2 years")
+
+# Ajout de l'axe x personnalisé avec les dates
+axis(side = 1, at = date, labels = format(date, "%b %Y"))
+
+# Ajout de lignes verticales pour marquer les dates
+abline(v = date, col = "gray50", lty = 3)
+
+# Tracé de la prévision avec la ligne rouge
+lines(predict, col = "red3", lwd = 2, lty = 3)
+
+# Ajout de la légende
+legend("topleft", 
+       legend = c("Chronique", "Prévision"), 
+       col = c("blue", "red3"), 
+       lty = c(1, 3), 
+       bty = "n")
+
+
+
+
