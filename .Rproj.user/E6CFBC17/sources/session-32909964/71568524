@@ -3,7 +3,7 @@
     "path": "~/Documents/école/COURS/BUT SD/BUT2/S1/SAE/SAE-3.03 Description et prévision de données temporelles/SAE/RStudio/analyse.R",
     "project_path": "analyse.R",
     "type": "r_source",
-    "hash": "382972265",
+    "hash": "794557884",
     "contents": "",
     "dirty": false,
     "created": 1734682220361.0,
@@ -13,15 +13,15 @@
         "tempName": "Untitled1",
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "331,0",
-        "scrollLine": "316"
+        "cursorPosition": "531,0",
+        "scrollLine": "517"
     },
     "folds": "",
-    "lastKnownWriteTime": 1734811088,
+    "lastKnownWriteTime": 1734887891,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1734811088099,
+    "last_content_update": 1734887891417,
     "read_only": false,
     "read_only_alternatives": []
 }

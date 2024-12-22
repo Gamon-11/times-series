@@ -128,6 +128,136 @@ ggplot(data_mois, aes(x = YearMonth, y = Moyenne_Cotation, )) +
   )
 
 # ---------------------------------------------------------------------------- #
+#.   3. Taux d'évolution de la moyenne mensuelle des cotations journalières    # 
+# ---------------------------------------------------------------------------- #
+
+# Groupement et calcul de la moyenne mensuelle
+data %>%
+  group_by(Futures, Annee_mois = format(Date, "%Y-%m")) %>%
+  summarize(moyenne_mensuelle = mean(Closed_Cotation, na.rm = TRUE)) -> data1
+
+# Calcul du taux de variation (1ère méthode avec l'utilisation de la fonction lag())
+data1 <- data1 %>%
+  group_by(Futures) %>%
+  mutate(Taux_variation_mensuel = (moyenne_mensuelle - lag(moyenne_mensuelle)) / lag(moyenne_mensuelle) * 100)
+
+# Calcul du taux de variation sans lag()
+data1 <- data1 %>%
+  group_by(Futures) %>%
+  mutate(Taux_variation_mensuel = c(NA, diff(moyenne_mensuelle) / moyenne_mensuelle[-length(moyenne_mensuelle)] * 100))
+
+# Conversion de Annee_mois en date
+data1$Annee_mois <- as.Date(paste0(data1$Annee_mois, "-01"))
+
+# Résultat final
+print(data1)
+
+
+# Conversion de Annee_mois en date
+data1$Annee_mois <- as.Date(paste0(data1$Annee_mois, "-01"))
+
+# Tracé
+ggplot(data1, aes(x = Annee_mois, y = Taux_variation_mensuel, group = Futures, color = Futures)) +
+  geom_line() +
+  geom_smooth(method = 'loess') +
+  facet_wrap(~ Futures, scales = "free_y") +
+  labs(
+    title = "Taux d'évolution de la moyenne mensuelle des cotations journalières",
+    x = "Date",
+    y = "Taux d'évolution (%)",
+    color = "Matière première",
+    subtitle = "Source : investing.com",
+    caption = c("BUT Science des Données - Lisieux","Diop Mandir - Gamondele Maxime - Samake Salif")
+    
+    
+  ) +
+  
+  theme_bw() +
+  theme(
+    axis.text.x = element_text(hjust = 1, angle = 45),
+    strip.text = element_text(face = "bold"), 
+    legend.position = c(0.85, 0.2),  
+    legend.text = element_text(size = 15),
+    legend.title = element_text(size = 24, face = "bold"),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 15),
+    plot.subtitle = element_text(hjust = 0.5, colour = "blue4"),
+    plot.caption = element_text(hjust = c(0, 1), face = "bold", colour = "blue4")
+  )
+
+# ---------------------------------------------------------------------------- #
+#.      4.Relation entre les valeurs moyennes mensuelles du café et du cacao  # 
+# ---------------------------------------------------------------------------- #
+
+# Étape 1 : Calcul des moyennes mensuelles pour le café
+data_cafe <- data %>%
+  filter(Futures == "Cotation du café") %>%
+  mutate(Annee_mois = format(Date, "%Y-%m")) %>%
+  group_by(Annee_mois) %>%
+  summarize(Moyenne_Cafe = mean(Closed_Cotation, na.rm = TRUE)) %>%
+  ungroup()
+
+# Étape 2 : Calcul des moyennes mensuelles pour le cacao
+data_cacao <- data %>%
+  filter(Futures == "Cotation du cacao") %>%
+  mutate(Annee_mois = format(Date, "%Y-%m")) %>%
+  group_by(Annee_mois) %>%
+  summarize(Moyenne_Cacao = mean(Closed_Cotation, na.rm = TRUE)) %>%
+  ungroup()
+
+# Étape 3 : Fusionner les deux jeux de données sur "Annee_mois"
+jointure_mooyenne = merge(data_cafe, data_cacao, by = "Annee_mois", all = TRUE)
+
+##### Modèle de régression linéaire
+model <- lm(Moyenne_Cacao ~ Moyenne_Cafe, data = jointure_mooyenne)
+summary(model)
+cor(jointure_mooyenne$Moyenne_Cacao, jointure_mooyenne$Moyenne_Cafe, method = "pearson")
+# Nuage de points avec lissage et régression linéaire
+ggplot(jointure_mooyenne, aes(x = Moyenne_Cafe, y = Moyenne_Cacao)) +
+  geom_point(color = "blue", 
+             size = 2, 
+             alpha = 0.7, 
+             shape = 21, 
+             fill = "blue") +  # Points du nuage
+  geom_smooth(aes(color = "Régression linéaire"), 
+              method = "lm", 
+              se = FALSE, 
+              size = 1) +  # Régression linéaire
+  geom_smooth(aes(color = "Lissage"), 
+              method = "loess", 
+              se = TRUE, 
+              size = 0.8) +  # Lissage LOESS
+  labs(
+    title = "Relation entre les valeurs moyennes mensuelles du café et du cacao",
+    x = "Moyenne mensuelle - Café",
+    y = "Moyenne mensuelle - Cacao",
+    subtitle = "Source : investing.com",
+    caption = c("BUT Science des Données - Lisieux", "Diop Mandir - Gamondele Maxime - Samake Salif"),
+    color = ""
+  ) +
+  scale_color_manual(values = c("Régression linéaire" = "green4", "Lissage" = "red")) + 
+  theme_bw() +
+  theme(
+    legend.position = "bottom",  
+    legend.justification = "center", 
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 15),
+    plot.subtitle = element_text(hjust = 0.5, colour = "blue4"),
+    plot.caption = element_text(hjust = c(0, 1), face = "bold", colour = "blue4"),
+    legend.title = element_text(face = "bold"),  # Titre de la légende en gras
+    legend.text = element_text(size = 10)  # Taille du texte des légendes
+  ) +
+  annotate(
+    "text", 
+    x = 125, 
+    y = 8000, 
+    label = " m(x) = 1186,5 + 10,8x\nR² = 15,56 %\np-val = 0", 
+    fontface = "bold",
+    color = "green4", 
+    size = 3.5
+  )
+
+
+cat(sprintf("P-value : %.5f\n", summary(model)$coefficients[2, 4]))
+# ---------------------------------------------------------------------------- #
 #          5.1 Etude du brent de 2010 à fin 2024 avec lissage                  #
 # ---------------------------------------------------------------------------- #
 
@@ -297,7 +427,7 @@ lissage_reg <- lissage1 +
     "text", 
     x = min(data_brent_2020$Month) + 230,  
     y = max(data_brent_2020$fitted) * 1, 
-    label = "R-squared = 92,67 %", 
+    label = "R² = 92,67 %", 
     vjust = 1,
     fontface = "bold",
     color = "green4", 
@@ -316,7 +446,7 @@ lissage_reg <- lissage1 +
     "text", 
     x = as.Date("2022-04-01"), 
     y = 50, 
-    label = "β1 = 0.097\n2.96 $/mois\n35.56 $/an'", 
+    label = "β1 = 0.097\n2.96 $/mois\n35.56 $/an", 
     hjust = -0.2,  # Ajustement horizontal
     vjust = -0.5,  # Ajustement vertical
     fontface = "bold",
@@ -326,9 +456,81 @@ lissage_reg <- lissage1 +
 
 print(lissage_reg)
 
-##### 5.5 Prevision de la valeur du brent sur 26 mois
-# Création de la période à éstimmer
-data_pred = data.frame(Month = seq(as.Date("2024-11-01"),as.Date("2026-12-01"),by="months"))
+
+# ---------------------------------------------------------------------------- #
+#                5.5 Prevision de la valeur du brent sur 26 mois               #
+# ---------------------------------------------------------------------------- #
+
+# Filtrer les données à partir de 2020
+historique_pred = data_brent %>%
+  filter(Month >= as.Date("2019-01-01"))
+
+# Conversion de Month en format Date et centrage des dates
+data_brent_pred <- historique_pred %>%
+  mutate(time_pred = as.numeric(as.Date(Month) - min(as.Date(Month)))) # Convertir en jours depuis le début
+
+# Création du modèle de régression linéaire
+model_pred <- lm(Monthly_Avg_Closed_Cotation ~ time_pred, data = data_brent_pred)
+summary(model_pred)
+
+# Création de la période à prédire
+data_pred <- data.frame(Month = seq(as.Date("2024-11-01"), as.Date("2026-12-01"), by = "months")) %>%
+  mutate(time_pred = as.numeric(as.Date(Month) - min(as.Date(historique_pred$Month)))) # Centrage identique
+
+# Ajout des prédictions au dataset de prédiction
+data_pred <- data_pred %>%
+  mutate(fitted = predict(model_pred, newdata = ., interval = "prediction"))
+
+# Extraire les colonnes de la matrice 'fitted' et les ajouter au DataFrame
+data_pred <- cbind(
+  data_pred,
+  fit = data_pred$fitted[, "fit"],
+  lwr = data_pred$fitted[, "lwr"],
+  upr = data_pred$fitted[, "upr"]
+)
+
+# Supprimer l'ancienne colonne 'fitted' si elle n'est plus nécessaire
+data_pred$fitted <- NULL
+
+# Vérifiez la structure pour confirmer
+str(data_pred)
+str(historique_pred)
+
+data_brent_final <- full_join(historique_pred, data_pred, by = "Month")
+
+# graphique
+graph_final <- chronique_reg(
+  data_brent_final,
+  "Cotation du pétrole Brent",
+  "Monthly_Avg_Closed_Cotation",
+  0.2,
+  "Janvier 2010 - Octobre 2024",
+  "Cotation (en $)",
+  "Source : investing.com",
+  c("BUT Science des Données - Lisieux", "Diop Mandir - Gamondele Maxime - Samake Salif")
+) +
+  geom_line(data = data_brent_final, aes(x = Month, y = fit), color = "blue", size = 1) +  # Ligne des valeurs prédites
+  geom_ribbon(
+    data = data_brent_final, 
+    aes(x = Month, ymin = lwr, ymax = upr), 
+    fill = "blue", 
+    alpha = 0.2
+  ) +  # Intervalle de confiance
+  labs(
+    title = "Prédictions des cotations mensuelles avec intervalles de confiance",
+    x = "Mois",
+    y = "Cotation Moyenne Prédite"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(hjust = 0.5)
+  )
+
+# Afficher le graphique
+graph_final
+
+
 
 
 

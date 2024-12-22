@@ -254,4 +254,3 @@ ggplot(series_futures, aes(x = Date, y = Value, color = Futures)) +
   facet_grid(Futures ~ .) +                 # Créer des facettes pour chaque niveau de Futures
   labs(title = "Série Chronologique des Futures", x = "Date", y = "Value") +
   theme_minimal() 
-

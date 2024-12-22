@@ -1,9 +1,10 @@
 ################################################################################
-# Auteurs : DIOP Mandir, GAMONDELE Maxime, SAMAKE Salif
-# Projet  :
-# Thématique :
-# Source : 
+# Auteurs     : DIOP Mandir, GAMONDELE Maxime, SAMAKE Salif
+# Projet      : SAE 3.03 - Série Chronologique
+# Thématique  : Futures de Matières Premières
+# Source      : investing.com
 ################################################################################
+
 
 # importation des librairies
 library(tabulapdf)
@@ -11,6 +12,9 @@ library(lubridate)
 library(dplyr)
 library(stringr)
 library(tidyr)
+library(zoo)
+library(dplyr)
+library(ggplot2)
 
 # importation des jeux de données
 D1 = extract_tables("../Data/Futures cacao US - Données Historiques.pdf",col_names = FALSE)
@@ -91,7 +95,7 @@ nom_format = function(data){
 # ajout_col ajoute une collonne avec le nom de la matire premiere 
 ajout_col = function(data,nom){
   obj <- data %>%
-    mutate(Futures = paste("cotation du",nom))
+    mutate(Futures = paste("Cotation du",nom))
 }
 
 # --------------------------  colle()                  ----------------------- #
@@ -220,15 +224,10 @@ final$Futures <- as.factor(final$Futures)
 levels(final$Futures)
 
 saveRDS(final, file = "fichier_de_travail.rds")
-
-
-
-library(zoo)
-library(dplyr)
-library(ggplot2)
-
 colnames(final)
 
+
+# Vérification à l'aide de graphique
 
 series_futures <- final %>%
   group_by(Futures) %>%
@@ -254,4 +253,4 @@ ggplot(series_futures, aes(x = Date, y = Value, color = Futures)) +
   geom_line() +                            # Tracer la courbe
   facet_grid(Futures ~ .) +                 # Créer des facettes pour chaque niveau de Futures
   labs(title = "Série Chronologique des Futures", x = "Date", y = "Value") +
-  theme_minimal()     
+  theme_minimal() 
