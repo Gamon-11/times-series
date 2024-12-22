@@ -461,76 +461,117 @@ print(lissage_reg)
 #                5.5 Prevision de la valeur du brent sur 26 mois               #
 # ---------------------------------------------------------------------------- #
 
-# Filtrer les données à partir de 2020
-historique_pred = data_brent %>%
-  filter(Month >= as.Date("2019-01-01"))
+  pred = function(date,titre_){
+  # Filtrer les données à partir de 2020
+  historique_pred = data_brent %>%
+    filter(Month >= as.Date(date))
+  
+  # Conversion de Month en format Date et centrage des dates
+  data_brent_pred <- historique_pred %>%
+    mutate(time_pred = as.numeric(as.Date(Month) - min(as.Date(Month)))) # Convertir en jours depuis le début
+  
+  # Création du modèle de régression linéaire
+  model_pred <- lm(Monthly_Avg_Closed_Cotation ~ time_pred, data = data_brent_pred)
+  summary(model_pred)
+  
+  # Création de la période à prédire
+  data_pred <- data.frame(Month = seq(as.Date("2024-11-01"), as.Date("2026-12-01"), by = "months")) %>%
+    mutate(time_pred = as.numeric(as.Date(Month) - min(as.Date(historique_pred$Month)))) # Centrage identique
+  
+  # Ajout des prédictions au dataset de prédiction
+  data_pred <- data_pred %>%
+    mutate(fitted = predict(model_pred, newdata = ., interval = "prediction"))
+  
+  # Extraire les colonnes de la matrice 'fitted' et les ajouter au DataFrame
+  data_pred <- cbind(
+    data_pred,
+    fit = data_pred$fitted[, "fit"],
+    lwr = data_pred$fitted[, "lwr"],
+    upr = data_pred$fitted[, "upr"]
+  )
+  
+  # Supprimer l'ancienne colonne 'fitted' si elle n'est plus nécessaire
+  data_pred$fitted <- NULL
+  
+  # Vérifiez la structure pour confirmer
+  str(data_pred)
+  str(historique_pred)
+  
+  data_brent_final <- full_join(historique_pred, data_pred, by = "Month")
+  
+  # graphique
+  epsi <- chronique_reg(
+    data_brent_final,
+    "Cotation du pétrole Brent",
+    "Monthly_Avg_Closed_Cotation",
+    0.2,
+    "",
+    "Cotation (en $)",
+    "",
+    c("","")
+  ) + 
+    # Ligne des valeurs prédites
+    geom_line(data = data_brent_final, aes(x = Month, y = fit), color = "blue", size = 1) +  
+    # Zone de prédiction (intervalle de confiance)
+    geom_ribbon(
+      data = data_brent_final, 
+      aes(x = Month, ymin = lwr, ymax = upr), 
+      fill = "blue", 
+      alpha = 0.2
+    ) +  
+    # Titres et légendes
+    labs(
+      title = titre_,
+      x = "Mois",
+      y = "Cotation (en $)"
+    ) + 
+    theme_bw() + 
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1),
+      plot.title = element_text(hjust = 0.5, face = "bold", size = 15),  # Mettre en gras et augmenter la taille du titre
+      plot.subtitle = element_text(hjust = 0.5, colour = "blue4"),
+      plot.caption = element_text(hjust = c(0, 1), face = "bold", colour = "blue4"),
+      legend.position = "bottom",  
+      legend.justification = "center"  # Positionner la légende au centre
+    )
+  
+  # Afficher le graphique
+  epsi
+}
 
-# Conversion de Month en format Date et centrage des dates
-data_brent_pred <- historique_pred %>%
-  mutate(time_pred = as.numeric(as.Date(Month) - min(as.Date(Month)))) # Convertir en jours depuis le début
+library(patchwork)
+# Titre général
+titre_pred <- "Prédiction sur 26 mois à partir de différentes années"
 
-# Création du modèle de régression linéaire
-model_pred <- lm(Monthly_Avg_Closed_Cotation ~ time_pred, data = data_brent_pred)
-summary(model_pred)
+# Création des graphiques avec pred() qui inclut des légendes
+p1 <- pred("2010-01-01", "2010")  # Graphique pour la date 2010-01-01
+p2 <- pred("2020-01-01", "2020")  # Graphique pour la date 2020-01-01
+p3 <- pred("2023-01-01", "2023")  # Graphique pour la date 2023-01-01
+p4 <- pred("2024-01-01", "2024")  # Graphique pour la date 2024-01-01
 
-# Création de la période à prédire
-data_pred <- data.frame(Month = seq(as.Date("2024-11-01"), as.Date("2026-12-01"), by = "months")) %>%
-  mutate(time_pred = as.numeric(as.Date(Month) - min(as.Date(historique_pred$Month)))) # Centrage identique
+# Ajouter les sous-titre et caption
+subtitle_pred <- "Source : investing.com"
+caption_pred <- c("BUT Science des Données - Lisieux","Diop Mandir - Gamondele Maxime - Samake Salif")
 
-# Ajout des prédictions au dataset de prédiction
-data_pred <- data_pred %>%
-  mutate(fitted = predict(model_pred, newdata = ., interval = "prediction"))
 
-# Extraire les colonnes de la matrice 'fitted' et les ajouter au DataFrame
-data_pred <- cbind(
-  data_pred,
-  fit = data_pred$fitted[, "fit"],
-  lwr = data_pred$fitted[, "lwr"],
-  upr = data_pred$fitted[, "upr"]
-)
-
-# Supprimer l'ancienne colonne 'fitted' si elle n'est plus nécessaire
-data_pred$fitted <- NULL
-
-# Vérifiez la structure pour confirmer
-str(data_pred)
-str(historique_pred)
-
-data_brent_final <- full_join(historique_pred, data_pred, by = "Month")
-
-# graphique
-graph_final <- chronique_reg(
-  data_brent_final,
-  "Cotation du pétrole Brent",
-  "Monthly_Avg_Closed_Cotation",
-  0.2,
-  "Janvier 2010 - Octobre 2024",
-  "Cotation (en $)",
-  "Source : investing.com",
-  c("BUT Science des Données - Lisieux", "Diop Mandir - Gamondele Maxime - Samake Salif")
-) +
-  geom_line(data = data_brent_final, aes(x = Month, y = fit), color = "blue", size = 1) +  # Ligne des valeurs prédites
-  geom_ribbon(
-    data = data_brent_final, 
-    aes(x = Month, ymin = lwr, ymax = upr), 
-    fill = "blue", 
-    alpha = 0.2
-  ) +  # Intervalle de confiance
-  labs(
-    title = "Prédictions des cotations mensuelles avec intervalles de confiance",
-    x = "Mois",
-    y = "Cotation Moyenne Prédite"
-  ) +
-  theme_minimal() +
-  theme(
-    axis.text.x = element_text(angle = 45, hjust = 1),
-    plot.title = element_text(hjust = 0.5)
+# Combiner les graphiques en un seul avec patchwork
+combined_graph <- (p1 + p2) / (p3 + p4) +  # Disposition en 2x2
+  plot_layout(guides = "collect") +  # Légende commune
+  plot_annotation(
+    title = titre_pred,  # Titre principal
+    subtitle = subtitle_pred,  # Sous-titre
+    caption = caption_pred,  # Caption
+    theme = theme(
+      plot.title = element_text(size = 16, face = "bold", hjust = 0.5),  # Style du titre
+      plot.subtitle = element_text(hjust = 0.5, colour = "blue4"),
+      plot.caption = element_text(hjust = c(0, 1), face = "bold", colour = "blue4"),
+      legend.position = "bottom",  # Position de la légende commune
+      legend.justification = "center"  # Centrage de la légende
+    )
   )
 
-# Afficher le graphique
-graph_final
-
-
+# Afficher le graphique combiné
+combined_graph
 
 
 

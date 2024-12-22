@@ -461,9 +461,10 @@ print(lissage_reg)
 #                5.5 Prevision de la valeur du brent sur 26 mois               #
 # ---------------------------------------------------------------------------- #
 
+pred = function(date,titre_){
 # Filtrer les données à partir de 2020
 historique_pred = data_brent %>%
-  filter(Month >= as.Date("2019-01-01"))
+  filter(Month >= as.Date(date))
 
 # Conversion de Month en format Date et centrage des dates
 data_brent_pred <- historique_pred %>%
@@ -499,7 +500,7 @@ str(historique_pred)
 data_brent_final <- full_join(historique_pred, data_pred, by = "Month")
 
 # graphique
-graph_final <- chronique_reg(
+epsi <- chronique_reg(
   data_brent_final,
   "Cotation du pétrole Brent",
   "Monthly_Avg_Closed_Cotation",
@@ -508,29 +509,46 @@ graph_final <- chronique_reg(
   "Cotation (en $)",
   "Source : investing.com",
   c("BUT Science des Données - Lisieux", "Diop Mandir - Gamondele Maxime - Samake Salif")
-) +
-  geom_line(data = data_brent_final, aes(x = Month, y = fit), color = "blue", size = 1) +  # Ligne des valeurs prédites
+) + 
+  # Ligne des valeurs prédites
+  geom_line(data = data_brent_final, aes(x = Month, y = fit), color = "blue", size = 1) +  
+  # Zone de prédiction (intervalle de confiance)
   geom_ribbon(
     data = data_brent_final, 
     aes(x = Month, ymin = lwr, ymax = upr), 
     fill = "blue", 
     alpha = 0.2
-  ) +  # Intervalle de confiance
+  ) +  
+  # Titres et légendes
   labs(
-    title = "Prédictions des cotations mensuelles avec intervalles de confiance",
+    title = titre_,
     x = "Mois",
-    y = "Cotation Moyenne Prédite"
-  ) +
-  theme_minimal() +
+    y = "Cotation (en $)"
+  ) + 
+  theme_minimal() + 
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1),
-    plot.title = element_text(hjust = 0.5)
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 15),  # Mettre en gras et augmenter la taille du titre
+    plot.subtitle = element_text(hjust = 0.5, colour = "blue4"),
+    plot.caption = element_text(hjust = c(0, 1), face = "bold", colour = "blue4"),
+    legend.position = "bottom",  
+    legend.justification = "center"  # Positionner la légende au centre
   )
 
 # Afficher le graphique
-graph_final
+epsi
+}
 
+library(patchwork)
 
+# Création des graphiques
+p1 <- pred("2010-01-01","2010-01-01")  # Graphique pour la date 2010-01-01
+p2 <- pred("2020-01-01")  # Graphique pour la date 2020-01-01
+p3 <- pred("2023-01-01")  # Graphique pour la date 2023-01-01
+p4 <- pred("2024-01-01")  # Graphique pour la date 2024-01-01
 
+# Combiner les graphiques en un seul avec patchwork
+combined_graph <- p1 + p2 + p3 + p4  # Vous pouvez ajuster la disposition comme vous le souhaitez
 
-
+# Afficher le graphique combiné
+combined_graph
