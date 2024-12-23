@@ -4,8 +4,15 @@
 # Thématique  : Futures de Matières Premières
 # Source      : https://fr.investing.com
 ################################################################################
-library("ggforce") 
 
+# Importation des librariries
+
+library(patchwork)
+library(stringr)
+library(ggplot2)  
+library(dplyr)        
+library(lubridate)    
+library(scales)  
 
 ################################################################################
 # --------------------------  Importation des données  ----------------------- #
@@ -72,12 +79,12 @@ ggplot(data, aes(x = factor(Year), y = Closed_Cotation, fill = Futures)) +
   geom_boxplot(outlier.size = 1, outlier.color = "black") +
   facet_wrap(~Futures, scales = "free_y") +
   labs(
-    title = "Boxplots annuels des cotations journalières de clôture",
+    #title = "Boxplots annuels des cotations journalières\n(2010-2024)",
     x = "Année", 
     y = "Cotation de clôture (en $)",
     fill = "Matière première",
     subtitle = "Source : investing.com",
-    caption = c("BUT Science des Données - Lisieux","Diop Mandir - Gamondele Maxime - Samake Salif")
+    #caption = c("BUT Science des Données - Lisieux","Diop Mandir - Gamondele Maxime - Samake Salif")
   ) +
   theme_bw() +
   theme(
@@ -109,12 +116,12 @@ ggplot(data_mois, aes(x = YearMonth, y = Moyenne_Cotation, )) +
   facet_wrap(~Futures, scales = "free_y") +  
   theme_bw() +
   labs(
-    title = "Évolution moyenne mensuelle de la cotation journalière de chaque matière première",
+    #title = "Évolution mensuelle des cotations journalières\n(2010-2024)",
     x = "Année",
     y = "Cotation (en $)",
     color = "Matières premières",
     subtitle = "Source : investing.com",
-    caption = c("BUT Science des Données - Lisieux","Diop Mandir - Gamondele Maxime - Samake Salif")
+    #caption = c("BUT Science des Données - Lisieux","Diop Mandir - Gamondele Maxime - Samake Salif")
   ) +
   theme(
     axis.text.x = element_text(hjust = 1, angle = 45),
@@ -162,14 +169,12 @@ ggplot(data1, aes(x = Annee_mois, y = Taux_variation_mensuel, group = Futures, c
   geom_smooth(method = 'loess') +
   facet_wrap(~ Futures, scales = "free_y") +
   labs(
-    title = "Taux d'évolution de la moyenne mensuelle des cotations journalières",
+    #title = "Taux d’évolution mensuels des cotations journalières\n(2010-2024)",
     x = "Date",
     y = "Taux d'évolution (%)",
     color = "Matière première",
     subtitle = "Source : investing.com",
-    caption = c("BUT Science des Données - Lisieux","Diop Mandir - Gamondele Maxime - Samake Salif")
-    
-    
+    #caption = c("BUT Science des Données - Lisieux","Diop Mandir - Gamondele Maxime - Samake Salif")
   ) +
   
   theme_bw() +
@@ -227,11 +232,11 @@ ggplot(jointure_mooyenne, aes(x = Moyenne_Cafe, y = Moyenne_Cacao)) +
               se = TRUE, 
               size = 0.8) +  # Lissage LOESS
   labs(
-    title = "Relation entre les valeurs moyennes mensuelles du café et du cacao",
+    #title = "Confrontation des valeurs de cotations du cacao et du café\n(2010-2024)",
     x = "Moyenne mensuelle - Café",
     y = "Moyenne mensuelle - Cacao",
     subtitle = "Source : investing.com",
-    caption = c("BUT Science des Données - Lisieux", "Diop Mandir - Gamondele Maxime - Samake Salif"),
+    #caption = c("BUT Science des Données - Lisieux", "Diop Mandir - Gamondele Maxime - Samake Salif"),
     color = ""
   ) +
   scale_color_manual(values = c("Régression linéaire" = "green4", "Lissage" = "red")) + 
@@ -269,17 +274,18 @@ data_brent = filter(data,data$Futures == "Cotation du pétrole Brent") %>%
   group_by(Month) %>%
   summarise(Monthly_Avg_Closed_Cotation = mean(Closed_Cotation, na.rm = TRUE))
 
+
 # Représentation du graphique 5.1
 
 # Base du graphique
 graph1 = chronique_reg(data_brent,
-              "Évolution de la cotation de clôture mensuelle moyenne du pétrole Brent",
-              "Monthly_Avg_Closed_Cotation",
-              0.2,
-              "Janvier 2010 - Octobre 2024",
-              "Cotation (en $)",
-              "Source : investing.com",
-              c("BUT Science des Données - Lisieux","Diop Mandir - Gamondele Maxime - Samake Salif"))
+                       "",
+                       "Monthly_Avg_Closed_Cotation",
+                       0.2,
+                       "Janvier 2010 - Octobre 2024",
+                       "Cotation (en $)",
+                       "Source : investing.com",
+                       c("",""))
 
 # Ajout d'éléments de précision au graphique
 graph1 <- graph1 + 
@@ -327,12 +333,12 @@ Sys.setlocale("LC_TIME", "fr_FR.UTF-8") # mon ordi anglophone donc transformatio
 ggplot(data_brent, aes(x = month_day, y = saisonnalités, color = factor(year), group = year)) +
   geom_line() +
   labs(
-    title = "Composante saisonnière de la cotation du Pétrole Brent (2010-2024)",
+    #title = "Composantes saisonnières annuelles de la cotation du pétrole Brent\n(2010-2024)",
     x = "Mois",
     y = "Variation (en $)",
     color = "Année",
     subtitle = "Source : investing.com",
-    caption = c("BUT Science des Données - Lisieux","Diop Mandir - Gamondele Maxime - Samake Salif")
+    #caption = c("BUT Science des Données - Lisieux","Diop Mandir - Gamondele Maxime - Samake Salif")
   ) +
   scale_x_date(labels = scales::date_format("%B"), breaks = "1 month") +  # Mois sous forme littérale
   theme_bw() +
@@ -357,15 +363,15 @@ data_brent_2020 = data_brent %>%
 
 # base du graphique
 lissage1 = chronique_reg(data_brent_2020,
-              "Cotation du pétrole Brent",
-              "Monthly_Avg_Closed_Cotation",
-              0.2,
-              "Janvier 2010 - Octobre 2024",
-              "Cotation (en $)",
-              "Source : investing.com",
-              c("BUT Science des Données - Lisieux","Diop Mandir - Gamondele Maxime - Samake Salif"))
+                         "",
+                         "Monthly_Avg_Closed_Cotation",
+                         0.2,
+                         "Janvier 2020 - Octobre 2024",
+                         "Cotation (en $)",
+                         "Source : investing.com",
+                         c("",""))
 # ajout d'élément de précision 
-lissage <- lissage1 + 
+lissage1 <- lissage1 + 
   geom_vline(xintercept = as.Date("2020-04-01"),
              color = "blue", 
              linetype = "dashed") + 
@@ -383,8 +389,9 @@ lissage <- lissage1 +
            color = "brown4", 
            hjust = 0)
 
+
 # affichage du graph
-print(lissage)
+print(lissage1)
 
 # ---------------------------------------------------------------------------- #
 #                     5.4 Modele linéaire par morceaux                         #
@@ -421,7 +428,7 @@ data_brent_2020 <- data_brent_2020 %>%
 # nouveau graphique prend celui de base + regression
 lissage_reg <- lissage1 + 
   geom_line(data = data_brent_2020, aes(x = Month, y = fitted, color = "Régression linéaire"), size = 0.7) +  # Ajout de la couleur et du label pour la légende
-  labs(title = "Cotation du pétrole Brent") + 
+  labs(title = "") + 
   scale_color_manual(values = c("Régression linéaire" = "green4", "Lissage" = "red")) + 
   annotate(
     "text", 
@@ -435,7 +442,7 @@ lissage_reg <- lissage1 +
   )+
   geom_segment(
     aes(
-      x = as.Date("2022-04-01"), y = 62.5,         # Point de départ
+      x = as.Date("2022-07-06"), y = 62.5,         # Point de départ
       xend = as.Date("2021-11-15"), yend = 85.5   # Point d'arrivée
     ),
     arrow = arrow(length = unit(0.2, "cm")),     # Taille et style de la flèche
@@ -444,7 +451,7 @@ lissage_reg <- lissage1 +
   )+
   annotate(
     "text", 
-    x = as.Date("2022-04-01"), 
+    x = as.Date("2022-07-08"), 
     y = 50, 
     label = "β1 = 0.097\n2.96 $/mois\n35.56 $/an", 
     hjust = -0.2,  # Ajustement horizontal
@@ -461,7 +468,7 @@ print(lissage_reg)
 #                5.5 Prevision de la valeur du brent sur 26 mois               #
 # ---------------------------------------------------------------------------- #
 
-  pred = function(date,titre_){
+pred = function(date,titre_){
   # Filtrer les données à partir de 2020
   historique_pred = data_brent %>%
     filter(Month >= as.Date(date))
@@ -539,9 +546,9 @@ print(lissage_reg)
   epsi
 }
 
-library(patchwork)
+
 # Titre général
-titre_pred <- "Prédiction sur 26 mois à partir de différentes années"
+titre_pred <- ""
 
 # Création des graphiques avec pred() qui inclut des légendes
 p1 <- pred("2010-01-01", "2010")  # Graphique pour la date 2010-01-01
@@ -551,7 +558,7 @@ p4 <- pred("2024-01-01", "2024")  # Graphique pour la date 2024-01-01
 
 # Ajouter les sous-titre et caption
 subtitle_pred <- "Source : investing.com"
-caption_pred <- c("BUT Science des Données - Lisieux","Diop Mandir - Gamondele Maxime - Samake Salif")
+#caption_pred <- c("BUT Science des Données - Lisieux","Diop Mandir - Gamondele Maxime - Samake Salif")
 
 
 # Combiner les graphiques en un seul avec patchwork
@@ -560,7 +567,7 @@ combined_graph <- (p1 + p2) / (p3 + p4) +  # Disposition en 2x2
   plot_annotation(
     title = titre_pred,  # Titre principal
     subtitle = subtitle_pred,  # Sous-titre
-    caption = caption_pred,  # Caption
+    #caption = caption_pred,  # Caption
     theme = theme(
       plot.title = element_text(size = 16, face = "bold", hjust = 0.5),  # Style du titre
       plot.subtitle = element_text(hjust = 0.5, colour = "blue4"),
