@@ -1,3 +1,21 @@
+---
+title: "test"
+author: "Maxime Gamondele"
+date: "2025-01-06"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
 ################################################################################
 # Auteurs     : DIOP Mandir, GAMONDELE Maxime, SAMAKE Salif
 # Projet      : SAE 3.03 - Série Chronologique
@@ -61,6 +79,10 @@ chronique_reg <- function(data, titre, y_col, span_, lab_x, lab_y,sub_,cap_) {
     )
 }
 
+```
+
+
+``` {r graph1}
 # ---------------------------------------------------------------------------- #
 #.      1. Boxplots des closed cotation annuels pour chaque matière première   # 
 # ---------------------------------------------------------------------------- #
@@ -94,8 +116,12 @@ ggplot(data, aes(x = factor(Year), y = Closed_Cotation, fill = Futures)) +
     legend.title = element_text(size = 24, face = "bold"),
     plot.title = element_text(hjust = 0.5, face = "bold", size = 15),
     plot.subtitle = element_text(hjust = 0.5, colour = "blue4"),
-    plot.caption = element_text(hjust = c(0, 1), face = "bold", colour = "blue4")
+    plot.ca
+    ption = element_text(hjust = c(0, 1), face = "bold", colour = "blue4")
   )
+
+```
+
 
 # ---------------------------------------------------------------------------- #
 #     2. Évolution mensuelle avec une courbe de régression lissée              # 
@@ -534,3 +560,14 @@ graph_prev
 ################################################################################
 #                                    FIN                                       #
 ################################################################################
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
