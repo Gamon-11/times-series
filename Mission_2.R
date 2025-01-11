@@ -1,26 +1,9 @@
----
-title: "test"
-author: "Maxime Gamondele"
-date: "2025-01-06"
-output: pdf_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
 ################################################################################
 # Auteurs     : DIOP Mandir, GAMONDELE Maxime, SAMAKE Salif
 # Projet      : SAE 3.03 - Série Chronologique
 # Thématique  : Futures de Matières Premières
 # Source      : https://fr.investing.com
+# Nom fichier : Mission_2
 ################################################################################
 
 # Libraries
@@ -79,10 +62,6 @@ chronique_reg <- function(data, titre, y_col, span_, lab_x, lab_y,sub_,cap_) {
     )
 }
 
-```
-
-
-``` {r graph1}
 # ---------------------------------------------------------------------------- #
 #.      1. Boxplots des closed cotation annuels pour chaque matière première   # 
 # ---------------------------------------------------------------------------- #
@@ -100,7 +79,7 @@ ggplot(data, aes(x = factor(Year), y = Closed_Cotation, fill = Futures)) +
   geom_boxplot(outlier.size = 1, outlier.color = "black") +
   facet_wrap(~Futures, scales = "free_y") +
   labs(
-    title = "Boxplots annuels des cotations journalières de clôture",
+    title = "Boxplots annuels des cotations journalières\n(2010-2024)",
     x = "Année", 
     y = "Cotation de clôture (en $)",
     fill = "Matière première",
@@ -116,12 +95,8 @@ ggplot(data, aes(x = factor(Year), y = Closed_Cotation, fill = Futures)) +
     legend.title = element_text(size = 24, face = "bold"),
     plot.title = element_text(hjust = 0.5, face = "bold", size = 15),
     plot.subtitle = element_text(hjust = 0.5, colour = "blue4"),
-    plot.ca
-    ption = element_text(hjust = c(0, 1), face = "bold", colour = "blue4")
+    plot.caption = element_text(hjust = c(0, 1), face = "bold", colour = "blue4")
   )
-
-```
-
 
 # ---------------------------------------------------------------------------- #
 #     2. Évolution mensuelle avec une courbe de régression lissée              # 
@@ -141,10 +116,10 @@ ggplot(data_mois, aes(x = YearMonth, y = Moyenne_Cotation, )) +
   facet_wrap(~Futures, scales = "free_y") +  
   theme_bw() +
   labs(
-    title = "Évolution moyenne mensuelle de la cotation journalière de chaque matière première",
+    title = "Évolution mensuelle des cotations journalières\n(2010-2024)",
     x = "Année",
     y = "Cotation (en $)",
-    color = "Matières premières",
+    color = "Matière première",
     subtitle = "Source : investing.com",
     caption = c("BUT Science des Données - Lisieux","Diop Mandir - Gamondele Maxime - Samake Salif")
   ) +
@@ -185,7 +160,7 @@ ggplot(data1, aes(x = Annee_mois, y = Taux_variation_mensuel, group = Futures, c
   geom_smooth(method = 'loess') +
   facet_wrap(~ Futures, scales = "free_y") +
   labs(
-    title = "Taux d'évolution de la moyenne mensuelle des cotations journalières",
+    title = "Taux d'évolution mensuels des cotations journalières\n(2010-2024)",
     x = "Date",
     y = "Taux d'évolution (%)",
     color = "Matière première",
@@ -248,11 +223,12 @@ ggplot(jointure_mooyenne, aes(x = Moyenne_Cafe, y = Moyenne_Cacao)) +
               se = TRUE, 
               size = 0.8) +  
   labs(
-    title = "Relation entre les valeurs moyennes mensuelles du café et du cacao",
+    title = "Confrontation des valeurs de cotations du cacao et du café\n(2010-2024)",
     x = "Moyenne mensuelle - Café",
     y = "Moyenne mensuelle - Cacao",
     subtitle = "Source : investing.com",
-    caption = c("BUT Science des Données - Lisieux", "Diop Mandir - Gamondele Maxime - Samake Salif"),
+    caption = c("BUT Science des Données - Lisieux",
+                "Diop Mandir - Gamondele Maxime - Samake Salif"),
     color = ""
   ) +
   scale_color_manual(values = c("Régression linéaire" = "green4", "Lissage" = "red")) + 
@@ -270,7 +246,7 @@ ggplot(jointure_mooyenne, aes(x = Moyenne_Cafe, y = Moyenne_Cacao)) +
     "text", 
     x = 125, 
     y = 8000, 
-    label = " m(x) = 1186,5 + 10,8x\nR² = 15,56 %\np-val = 0", 
+    label = " m(x) = 1186,5 + 10,8x\nR² = 15,56 %\nr = 0.39\np-val = 0", 
     fontface = "bold",
     color = "green4", 
     size = 3.5
@@ -278,6 +254,7 @@ ggplot(jointure_mooyenne, aes(x = Moyenne_Cafe, y = Moyenne_Cacao)) +
 
 # Affichage de la P-value
 cat(sprintf("P-value : %.5f\n", summary(model)$coefficients[2, 4]))
+
 # ---------------------------------------------------------------------------- #
 #          5.1 Etude du brent de 2010 à fin 2024 avec lissage                  #
 # ---------------------------------------------------------------------------- #
@@ -293,7 +270,7 @@ data_brent = filter(data,data$Futures == "Cotation du pétrole Brent") %>%
 
 # Base du graphique
 graph1 = chronique_reg(data_brent,
-              "Évolution de la cotation de clôture mensuelle moyenne du pétrole Brent",
+              "Cotation du pétrole Brent avec les phénomènes économiques majeurs\n(2010-2024)",
               "Monthly_Avg_Closed_Cotation",
               0.2,
               "Janvier 2010 - Octobre 2024",
@@ -349,7 +326,7 @@ Sys.setlocale("LC_TIME", "fr_FR.UTF-8") # mon ordi anglophone donc transformatio
 ggplot(data_brent, aes(x = month_day, y = saisonnalités, color = factor(year), group = year)) +
   geom_line() +
   labs(
-    title = "Composante saisonnière de la cotation du Pétrole Brent (2010-2024)",
+    title = "Composante saisonnière annuelles de la cotation du Pétrole Brent\n(2010-2024)",
     x = "Mois",
     y = "Variation (en $)",
     color = "Année",
@@ -379,13 +356,14 @@ data_brent_2020 = data_brent %>%
 
 # base du graphique
 lissage1 = chronique_reg(data_brent_2020,
-              "Cotation du pétrole Brent",
-              "Monthly_Avg_Closed_Cotation",
-              0.2,
-              "Janvier 2010 - Octobre 2024",
-              "Cotation (en $)",
-              "Source : investing.com",
-              c("BUT Science des Données - Lisieux","Diop Mandir - Gamondele Maxime - Samake Salif"))
+                         "Cotation du pétrole Brent avec les phénomènes économiques majeurs\n(2020-2024)",
+                         "Monthly_Avg_Closed_Cotation",
+                         0.2,
+                         "Janvier 2010 - Octobre 2024",
+                         "Cotation (en $)",
+                         "Source : investing.com",
+                         c("BUT Science des Données - Lisieux","Diop Mandir - Gamondele Maxime - Samake Salif"))
+
 # ajout d'élément de précision 
 lissage <- lissage1 + 
   geom_vline(xintercept = as.Date("2020-04-01"),
@@ -439,7 +417,7 @@ data_brent_2020 <- data_brent_2020 %>%
 # nouveau graphique prend celui de base + regression
 lissage_reg <- lissage1 + 
   geom_line(data = data_brent_2020, aes(x = Month, y = fitted, color = "Régression linéaire"), size = 0.7) +  # Ajout de la couleur et du label pour la légende
-  labs(title = "Cotation du pétrole Brent") + 
+  labs(title = "Cotation du pétrole Brent avec modèles linéaires par morceaux\n(2020-2024)") + 
   scale_color_manual(values = c("Régression linéaire" = "green4", "Lissage" = "red")) + 
   annotate(
     "text", 
@@ -520,8 +498,8 @@ pred = function(date,titre_){
     0.2,
     "Janvier 2010 - Octobre 2024",
     "Cotation (en $)",
-    "Source : investing.com",
-    c("BUT Science des Données - Lisieux", "Diop Mandir - Gamondele Maxime - Samake Salif")
+    "",
+    c("","")
   ) + 
     geom_line(data = data_brent_final, aes(x = Month, y = fit), color = "blue", size = 1) +  
     geom_ribbon(
@@ -553,21 +531,25 @@ p2 <- pred("2020-01-01","2020")
 p3 <- pred("2023-01-01","2023") 
 p4 <- pred("2024-01-01","2024")  
 
-graph_prev <- p1 + p2 + p3 + p4 
+library(patchwork)
 
-graph_prev
+graph_prev <- (p1 | p2) / (p3 | p4) +
+  plot_annotation(
+    title = "Prédictions sur 26 mois du pétrole Brent selon différents modèles",
+    subtitle = "Source : investing.com",
+    caption = c("BUT Science des Données - Lisieux","Diop Mandir - Gamondele Maxime - Samake Salif")
+  ) &
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 15),
+    plot.subtitle = element_text(hjust = 0.5, colour = "blue4"),
+    plot.caption = element_text(hjust = c(0, 1), face = "bold", colour = "blue4"),
+    legend.position = "bottom",
+    legend.justification = "center"
+  )
+
+print(graph_prev)
 
 ################################################################################
-#                                    FIN                                       #
+#########################            END             ###########################
 ################################################################################
-```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
